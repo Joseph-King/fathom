@@ -1,0 +1,151 @@
+package cli
+
+import (
+	"bufio"
+	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"strings"
+
+	"github.com/spf13/cobra"
+)
+
+// LastCmd represents the 'last' command
+var LastCmd = &cobra.Command{
+	Use:   "last",
+	Short: "Analyze the most recent terminal output or piped logs",
+	Long:  `Fathom attempts to capture your last terminal buffer, then sends it to your AI provider for analysis.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		var logs string
+		var err error
+
+		logs, err = captureTerminalBuffer()
+
+		if err != nil {
+			return fmt.Errorf("could not automatically capture terminal: %w. Try piping your command: 'cmd | fathom'", err)
+		}
+
+		if logs == "" {
+			fmt.Println("Nothing captured... exiting")
+			return nil
+		}
+
+		if strings.TrimSpace(logs) == "" {
+			return fmt.Errorf("captured logs are empty")
+		}
+
+		// Print a snippet of what we caught for verification
+		fmt.Printf("\n--- Captured Logs (Truncated) ---\n%s\n---------------------------------\n", truncateLogs(logs, 10))
+
+		// TODO: Pass 'logs' to your internal/ai package here in the next step!
+		fmt.Println("\n[Success] Ready to send to AI provider...")
+		return nil
+	},
+}
+
+func captureTerminalBuffer() (string, error) {
+	// TO DO add tmux/xclip/wl-clipboard if applicable
+
+	shell := os.Getenv("SHELL")
+
+	lastCmd, err := getLastCommand(shell)
+	if err != nil {
+		return "", err
+	} else if lastCmd == "" {
+		return "", nil
+	}
+
+	output, err := runLastCommand(shell, lastCmd)
+	if err != nil {
+		return "", err
+	}
+	return output, nil
+}
+
+func runLastCommand(shell, cmd string) (string, error) {
+	// Prompt the user to confirm
+	reader := bufio.NewReader(os.Stdin)
+	io.WriteString(os.Stdout, fmt.Sprintf("Would you like to re-execute and capture the following command:\n%s\n? (y/N): ", cmd))
+	response, err := reader.ReadString('\n')
+
+	if err != nil {
+		return "", fmt.Errorf("failed to read response: %w", err)
+	}
+
+	response = strings.TrimSpace(response)
+	if response != "y" && response != "Y" {
+		return "", nil
+	}
+
+	// Execute the command and capture its output
+	fmt.Println("Executing:", shell, "-c", cmd)
+	fullCmd := exec.Command(shell, "-c", cmd)
+	output, err := fullCmd.CombinedOutput()
+
+	if err != nil {
+		return "", fmt.Errorf("failed to execute command: %w", err)
+	}
+
+	return string(output), nil
+}
+
+func getLastBash() (string, error) {
+	cmd := exec.Command("bash", "-c", "history", "-1")
+	output, err := cmd.CombinedOutput()
+
+	if err != nil {
+		return "", fmt.Errorf("failed to capture bash history: %w", err)
+	}
+
+	lastCommand := strings.TrimSpace(string(output))
+	if len(lastCommand) == 0 {
+		return "", fmt.Errorf("no commands found in bash history")
+	}
+
+	return lastCommand, nil
+}
+
+func getLastZsh() (string, error) {
+	cmd := exec.Command("zsh", "-c", fmt.Sprintf("fc -l -n %d | sed '/^ *[^ ]/!d'", 1))
+	output, err := cmd.CombinedOutput()
+
+	if err != nil {
+		return "", fmt.Errorf("failed to capture zsh history: %w", err)
+	}
+
+	lastCommand := strings.TrimSpace(string(output))
+	if len(lastCommand) == 0 {
+		return "", fmt.Errorf("no commands found in zsh history")
+	}
+
+	return lastCommand, nil
+}
+
+func getLastFish() (string, error) {
+	cmd := exec.Command("fish", "-c", "echo $history[2]")
+	output, err := cmd.CombinedOutput()
+
+	if err != nil {
+		return "", fmt.Errorf("failed to capture fish history: %w", err)
+	}
+
+	lastCommand := strings.TrimSpace(string(output))
+	if len(lastCommand) == 0 {
+		return "", fmt.Errorf("no commands found in fish history")
+	}
+
+	return lastCommand, nil
+}
+
+func getLastCommand(shell string) (string, error) {
+	if strings.Contains(shell, "zsh") {
+		return getLastZsh()
+	} else if strings.Contains(shell, "bash") {
+		return getLastBash()
+	} else if strings.Contains(shell, "fish") {
+		return getLastFish()
+	}
+
+	return "", fmt.Errorf("unsupported shell: %s", os.Getenv("SHELL"))
+}
