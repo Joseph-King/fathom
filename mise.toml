@@ -2,6 +2,7 @@
 go = "1.26.4"
 gitleaks = "v8.18.4"
 "cargo:prek" = "latest"
+"go:github.com/google/addlicense" = "latest"
 
 [plugins]
 # Ensures any custom environment variables or path updates are managed natively
@@ -21,4 +22,11 @@ COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "none")
 DATE=$(date -u +%Y-%m-%d)
 
 go build -ldflags "-X github.com/Joseph-King/fathom/internal/cli.Version=${VERSION} -X github.com/Joseph-King/fathom/internal/cli.CommitSHA=${COMMIT} -X github.com/Joseph-King/fathom/internal/cli.BuildDate=${DATE}" -o build/fathom ./cmd/main.go
+"""
+
+[tasks.prek]
+description = "Clean prek then run --all-files"
+run = """
+prek clean
+prek run --all-files
 """
