@@ -94,3 +94,4 @@ Roadmap:
 - [ ] Phase 6: Caching and Context
   - [ ] Research caching and context strategies
   - [ ] Implement caching and context strategies
+  - [ ] Research a way to link to frontend of chosen llm provider
