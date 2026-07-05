@@ -43,7 +43,7 @@ var RootCmd = &cobra.Command{
 
 			fmt.Printf("\n--- Analyzing Piped Stream (Truncated) ---\n%s\n------------------------------------------\n", truncateLogs(logs, 10))
 
-			// TODO: Pass logs straight to your internal/ai package here!
+			// TODO: Pass logs straight to your cli/ai package here!
 			fmt.Println("\n[Success] Sending piped data to AI...")
 			return nil
 		}

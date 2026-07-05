@@ -14,7 +14,7 @@
 
 package main
 
-import "github.com/Joseph-King/sonde/internal/cli"
+import cli "github.com/Joseph-King/sonde/cli/cmd"
 
 func main() {
 	// Execute reads the CLI flags, checks for pipes, and kicks off the tool

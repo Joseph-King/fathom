@@ -52,7 +52,7 @@ var LastCmd = &cobra.Command{
 		// Print a snippet of what we caught for verification
 		fmt.Printf("\n--- Captured Logs (Truncated) ---\n%s\n---------------------------------\n", truncateLogs(logs, 10))
 
-		// TODO: Pass 'logs' to your internal/ai package here in the next step!
+		// TODO: Pass 'logs' to your cli/ai package here in the next step!
 		fmt.Println("\n[Success] Ready to send to AI provider...")
 		return nil
 	},
